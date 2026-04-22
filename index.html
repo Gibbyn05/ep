@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Europris – Lagerstyring Hagemøbler</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-e">E</span><span class="logo-uro">uro</span><span class="logo-pris">pris</span>
+      </div>
+      <h1>Lagerstyring – Hagemøbler</h1>
+    </div>
+  </header>
+
+  <main>
+    <!-- Dashboard -->
+    <section class="dashboard">
+      <div class="stat-card" id="stat-butikk">
+        <div class="stat-icon">🏪</div>
+        <div class="stat-info">
+          <div class="stat-label">Butikklager</div>
+          <div class="stat-value" id="count-butikk">0</div>
+          <div class="stat-sub">produktlinjer</div>
+        </div>
+      </div>
+      <div class="stat-card" id="stat-ekstern">
+        <div class="stat-icon">🏭</div>
+        <div class="stat-info">
+          <div class="stat-label">Eksternlager</div>
+          <div class="stat-value" id="count-ekstern">0</div>
+          <div class="stat-sub">produktlinjer</div>
+        </div>
+      </div>
+      <div class="stat-card" id="stat-total">
+        <div class="stat-icon">📦</div>
+        <div class="stat-info">
+          <div class="stat-label">Totalt antall</div>
+          <div class="stat-value" id="count-total">0</div>
+          <div class="stat-sub">enheter på lager</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toolbar -->
+    <section class="toolbar">
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="Søk etter produkt..." />
+        <button class="btn-icon" id="clearSearch" title="Tøm søk">✕</button>
+      </div>
+      <div class="filter-wrap">
+        <button class="filter-btn active" data-filter="alle">Alle</button>
+        <button class="filter-btn" data-filter="butikk">
+          <span>🏪</span> Butikk
+        </button>
+        <button class="filter-btn" data-filter="ekstern">
+          <span>🏭</span> Eksternlager
+        </button>
+        <button class="filter-btn" data-filter="begge">
+          <span>↔️</span> Begge steder
+        </button>
+      </div>
+      <button class="btn-primary" id="btnLeggTil">+ Legg til produkt</button>
+    </section>
+
+    <!-- Product list -->
+    <section class="product-section">
+      <table class="product-table" id="productTable">
+        <thead>
+          <tr>
+            <th>Produkt</th>
+            <th>Artikkelnr.</th>
+            <th class="center">🏪 Butikk</th>
+            <th class="center">🏭 Ekstern</th>
+            <th class="center">Totalt</th>
+            <th>Plassering</th>
+            <th class="center">Handlinger</th>
+          </tr>
+        </thead>
+        <tbody id="productBody">
+          <!-- Rows inserted by JS -->
+        </tbody>
+      </table>
+      <div id="emptyState" class="empty-state hidden">
+        <div class="empty-icon">🌿</div>
+        <p>Ingen produkter funnet</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Add/Edit product -->
+  <div class="modal-overlay hidden" id="modalProduct">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">Legg til produkt</h2>
+        <button class="btn-icon" id="closeModalProduct">✕</button>
+      </div>
+      <form id="productForm">
+        <input type="hidden" id="editId" />
+        <div class="form-row">
+          <label>Produktnavn *
+            <input type="text" id="fieldNavn" placeholder="f.eks. Solstoler 2-pk" required />
+          </label>
+          <label>Artikkelnummer
+            <input type="text" id="fieldArtikkel" placeholder="f.eks. 123456" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Kategori
+            <select id="fieldKategori">
+              <option value="Stoler">Stoler</option>
+              <option value="Bord">Bord</option>
+              <option value="Sofagruppe">Sofagruppe</option>
+              <option value="Parasoll">Parasoll</option>
+              <option value="Benk">Benk</option>
+              <option value="Hengestol">Hengestol</option>
+              <option value="Annet">Annet</option>
+            </select>
+          </label>
+          <label>Notat
+            <input type="text" id="fieldNotat" placeholder="Valgfritt notat" />
+          </label>
+        </div>
+        <div class="form-row quantities">
+          <label>Antall i butikk
+            <input type="number" id="fieldButikk" min="0" value="0" />
+          </label>
+          <label>Antall på eksternlager
+            <input type="number" id="fieldEkstern" min="0" value="0" />
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" id="cancelProduct">Avbryt</button>
+          <button type="submit" class="btn-primary">Lagre</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Transfer -->
+  <div class="modal-overlay hidden" id="modalTransfer">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="transferTitle">Flytt produkter</h2>
+        <button class="btn-icon" id="closeModalTransfer">✕</button>
+      </div>
+      <div id="transferInfo" class="transfer-info"></div>
+      <div class="transfer-body">
+        <div class="transfer-direction">
+          <div class="loc-box" id="transferFrom">
+            <div class="loc-label">Fra</div>
+            <div class="loc-name" id="fromName">–</div>
+            <div class="loc-count">Tilgjengelig: <strong id="fromAvail">0</strong></div>
+          </div>
+          <div class="transfer-arrow">→</div>
+          <div class="loc-box" id="transferTo">
+            <div class="loc-label">Til</div>
+            <div class="loc-name" id="toName">–</div>
+          </div>
+        </div>
+        <label class="qty-label">Antall å flytte
+          <input type="number" id="transferQty" min="1" value="1" />
+        </label>
+        <div id="transferError" class="error-msg hidden"></div>
+        <div class="form-actions">
+          <button class="btn-secondary" id="cancelTransfer">Avbryt</button>
+          <button class="btn-primary" id="confirmTransfer">Flytt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
