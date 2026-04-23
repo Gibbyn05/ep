@@ -105,6 +105,7 @@ let transferCtx  = null;
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 
 const productBody        = document.getElementById('productBody');
+const productCards       = document.getElementById('productCards');
 const emptyState         = document.getElementById('emptyState');
 const countButikk        = document.getElementById('count-butikk');
 const countEkstern       = document.getElementById('count-ekstern');
@@ -112,6 +113,7 @@ const countTotal         = document.getElementById('count-total');
 const searchInput        = document.getElementById('searchInput');
 const clearSearch        = document.getElementById('clearSearch');
 const btnLeggTil         = document.getElementById('btnLeggTil');
+const fabLeggTil         = document.getElementById('fabLeggTil');
 const modalProduct       = document.getElementById('modalProduct');
 const modalTitle         = document.getElementById('modalTitle');
 const productForm        = document.getElementById('productForm');
@@ -205,12 +207,18 @@ function render() {
   const list = filteredProducts();
 
   if (list.length === 0) {
-    productBody.innerHTML = '';
+    productBody.innerHTML  = '';
+    productCards.innerHTML = '';
     emptyState.classList.remove('hidden');
     return;
   }
   emptyState.classList.add('hidden');
 
+  const moveBtns = p =>
+    (p.ekstern > 0 ? `<button class="btn-action btn-move" data-id="${p.id}" data-dir="til-butikk">🏪 Til butikk</button>` : '') +
+    (p.butikk  > 0 ? `<button class="btn-action btn-move" data-id="${p.id}" data-dir="til-ekstern">🏭 Til ekstern</button>` : '');
+
+  // ── Tabellrader (desktop) ─────────────────────────────────────
   productBody.innerHTML = list.map(p => `
     <tr>
       <td>
@@ -226,13 +234,48 @@ function render() {
       <td>${locBadgeHtml(p)}</td>
       <td class="center">
         <div class="action-cell">
-          ${p.ekstern > 0 ? `<button class="btn-action btn-move" data-id="${p.id}" data-dir="til-butikk" title="Flytt fra eksternlager til butikk">🏪 Til butikk</button>` : ''}
-          ${p.butikk  > 0 ? `<button class="btn-action btn-move" data-id="${p.id}" data-dir="til-ekstern" title="Flytt fra butikk til eksternlager">🏭 Til ekstern</button>` : ''}
+          ${moveBtns(p)}
           <button class="btn-action btn-edit"   data-id="${p.id}">Rediger</button>
           <button class="btn-action btn-delete" data-id="${p.id}">Slett</button>
         </div>
       </td>
     </tr>
+  `).join('');
+
+  // ── Kort (mobil) ──────────────────────────────────────────────
+  productCards.innerHTML = list.map(p => `
+    <div class="prod-card">
+      <div class="pc-top">
+        <div class="pc-name">${esc(p.navn)}</div>
+        ${locBadgeHtml(p)}
+      </div>
+      <div class="pc-meta">
+        <span class="prod-cat">${esc(p.kategori)}</span>
+        ${p.artikkel ? `<span class="art-nr">${esc(p.artikkel)}</span>` : ''}
+        <span class="pc-pris">${formatPris(p.pris)}</span>
+      </div>
+      <div class="pc-qty-row">
+        <div class="pc-qty-item">
+          <span class="pc-qty-label">🏪 Butikk</span>
+          ${qtyBadge(p.butikk, 'qty-butikk')}
+        </div>
+        <div class="pc-qty-sep"></div>
+        <div class="pc-qty-item">
+          <span class="pc-qty-label">🏭 Ekstern</span>
+          ${qtyBadge(p.ekstern, 'qty-ekstern')}
+        </div>
+        <div class="pc-qty-sep"></div>
+        <div class="pc-qty-item">
+          <span class="pc-qty-label">Totalt</span>
+          ${qtyBadge(p.butikk + p.ekstern, 'qty-total')}
+        </div>
+      </div>
+      <div class="pc-actions">
+        ${moveBtns(p)}
+        <button class="btn-action btn-edit"   data-id="${p.id}">✏️ Rediger</button>
+        <button class="btn-action btn-delete" data-id="${p.id}">🗑️ Slett</button>
+      </div>
+    </div>
   `).join('');
 }
 
@@ -382,14 +425,17 @@ function deleteProduct(id) {
 
 // ── Event delegation ──────────────────────────────────────────────────────────
 
-productBody.addEventListener('click', e => {
+function handleProductClick(e) {
   const btn = e.target.closest('button[data-id]');
   if (!btn) return;
   const id = parseInt(btn.dataset.id);
-  if (btn.classList.contains('btn-move'))   openTransferModal(id, btn.dataset.dir);
+  if (btn.classList.contains('btn-move'))        openTransferModal(id, btn.dataset.dir);
   else if (btn.classList.contains('btn-edit'))   openEditModal(id);
   else if (btn.classList.contains('btn-delete')) deleteProduct(id);
-});
+}
+
+productBody.addEventListener('click', handleProductClick);
+productCards.addEventListener('click', handleProductClick);
 
 // ── Filter buttons ────────────────────────────────────────────────────────────
 
@@ -419,6 +465,7 @@ clearSearch.addEventListener('click', () => {
 // ── Modal wiring ──────────────────────────────────────────────────────────────
 
 btnLeggTil.addEventListener('click', openAddModal);
+fabLeggTil.addEventListener('click', openAddModal);
 closeModalProduct.addEventListener('click', closeProductModal);
 cancelProduct.addEventListener('click', closeProductModal);
 closeModalTransfer.addEventListener('click', closeTransferModal);
