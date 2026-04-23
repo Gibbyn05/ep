@@ -73,6 +73,7 @@
           <tr>
             <th>Produkt</th>
             <th>Artikkelnr.</th>
+            <th>Pris</th>
             <th class="center">🏪 Butikk</th>
             <th class="center">🏭 Ekstern</th>
             <th class="center">Totalt</th>
@@ -111,15 +112,23 @@
         <div class="form-row">
           <label>Kategori
             <select id="fieldKategori">
-              <option value="Stoler">Stoler</option>
-              <option value="Bord">Bord</option>
+              <option value="Hagegruppe/Loungesett">Hagegruppe/Loungesett</option>
               <option value="Sofagruppe">Sofagruppe</option>
-              <option value="Parasoll">Parasoll</option>
+              <option value="Stoler">Stoler</option>
+              <option value="Solseng/Solstol">Solseng/Solstol</option>
+              <option value="Cafesett/Bistrosett">Cafesett/Bistrosett</option>
+              <option value="Bord">Bord</option>
               <option value="Benk">Benk</option>
-              <option value="Hengestol">Hengestol</option>
+              <option value="Parasoll">Parasoll</option>
+              <option value="Parasollfot">Parasollfot</option>
               <option value="Annet">Annet</option>
             </select>
           </label>
+          <label>Pris (kr)
+            <input type="number" id="fieldPris" min="0" placeholder="f.eks. 999" />
+          </label>
+        </div>
+        <div class="form-row">
           <label>Notat
             <input type="text" id="fieldNotat" placeholder="Valgfritt notat" />
           </label>

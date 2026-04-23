@@ -264,6 +264,7 @@ main {
   margin-top: 2px;
 }
 .art-nr { font-size: .8rem; color: var(--gray-400); font-family: monospace; }
+.pris-cell { font-size: .85rem; font-weight: 600; color: var(--gray-600); white-space: nowrap; }
 
 .qty-badge {
   display: inline-block;
@@ -476,8 +477,10 @@ label input:focus, label select:focus { border-color: var(--yellow-dark); }
   .toolbar { flex-direction: column; align-items: stretch; }
   .filter-wrap { justify-content: flex-start; }
 
-  .product-table th:nth-child(4),
-  .product-table td:nth-child(4) { display: none; }
+  .product-table th:nth-child(3),
+  .product-table td:nth-child(3),
+  .product-table th:nth-child(5),
+  .product-table td:nth-child(5) { display: none; }
 
   .form-row { grid-template-columns: 1fr; }
 }
