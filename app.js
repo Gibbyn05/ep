@@ -257,21 +257,23 @@ function render() {
       <div class="pc-qty-row">
         <div class="pc-qty-item">
           <span class="pc-qty-label">🏪 Butikk</span>
-          ${qtyBadge(p.butikk, 'qty-butikk')}
+          <div class="qty-stepper">
+            <button class="qty-step qty-dec" data-id="${p.id}" data-field="butikk" aria-label="Minus">−</button>
+            <span class="qty-num ${p.butikk === 0 ? 'qty-num-zero' : 'qty-num-green'}">${p.butikk}</span>
+            <button class="qty-step qty-inc" data-id="${p.id}" data-field="butikk" aria-label="Pluss">+</button>
+          </div>
         </div>
         <div class="pc-qty-sep"></div>
         <div class="pc-qty-item">
           <span class="pc-qty-label">🏭 Ekstern</span>
-          ${qtyBadge(p.ekstern, 'qty-ekstern')}
-        </div>
-        <div class="pc-qty-sep"></div>
-        <div class="pc-qty-item">
-          <span class="pc-qty-label">Totalt</span>
-          ${qtyBadge(p.butikk + p.ekstern, 'qty-total')}
+          <div class="qty-stepper">
+            <button class="qty-step qty-dec" data-id="${p.id}" data-field="ekstern" aria-label="Minus">−</button>
+            <span class="qty-num ${p.ekstern === 0 ? 'qty-num-zero' : 'qty-num-red'}">${p.ekstern}</span>
+            <button class="qty-step qty-inc" data-id="${p.id}" data-field="ekstern" aria-label="Pluss">+</button>
+          </div>
         </div>
       </div>
       <div class="pc-actions">
-        ${moveBtns(p)}
         <button class="btn-action btn-edit"   data-id="${p.id}">✏️ Rediger</button>
         <button class="btn-action btn-delete" data-id="${p.id}">🗑️ Slett</button>
       </div>
@@ -426,6 +428,22 @@ function deleteProduct(id) {
 // ── Event delegation ──────────────────────────────────────────────────────────
 
 function handleProductClick(e) {
+  // +/− stepper
+  const step = e.target.closest('.qty-step');
+  if (step) {
+    const p = db.products.find(x => x.id === parseInt(step.dataset.id));
+    if (!p) return;
+    const field = step.dataset.field;
+    if (step.classList.contains('qty-inc')) {
+      p[field]++;
+    } else {
+      p[field] = Math.max(0, p[field] - 1);
+    }
+    saveData(db);
+    render();
+    return;
+  }
+
   const btn = e.target.closest('button[data-id]');
   if (!btn) return;
   const id = parseInt(btn.dataset.id);
