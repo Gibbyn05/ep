@@ -2,7 +2,7 @@
 
 // ── Data layer ────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'ep_hagemøbler_v2';
+const STORAGE_KEY = 'ep_hagemøbler_v3';
 
 function loadData() {
   try {
@@ -19,7 +19,7 @@ function saveData(data) {
 
 function defaultData() {
   return {
-    nextId: 56,
+    nextId: 62,
     products: [
       // ── Hagegruppe / Loungesett ──────────────────────────────────────────
       { id:  1, navn: 'Loungesett utemøbler Lyngby',   artikkel: '210968', kategori: 'Hagegruppe/Loungesett', pris: 5999,  notat: '', butikk: 0, ekstern: 0 },
