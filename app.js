@@ -10,10 +10,13 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-let db           = { products: [] };
-let activeFilter = 'alle';
-let searchQuery  = '';
-let transferCtx  = null;
+let db               = { products: [] };
+let activeFilter     = 'alle';
+let searchQuery      = '';
+let transferCtx      = null;
+let sortField        = 'navn';
+let sortDir          = 'asc';
+let groupByKategori  = false;
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 
@@ -166,7 +169,7 @@ function esc(s) {
 // ── Render ────────────────────────────────────────────────────────────────────
 
 function filteredProducts() {
-  return db.products.filter(p => {
+  const list = db.products.filter(p => {
     if (activeFilter !== 'alle' && locationOf(p) !== activeFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -177,30 +180,24 @@ function filteredProducts() {
     }
     return true;
   });
+
+  list.sort((a, b) => {
+    let va = sortField === 'total' ? a.butikk + a.ekstern : a[sortField];
+    let vb = sortField === 'total' ? b.butikk + b.ekstern : b[sortField];
+    if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+    if (va < vb) return sortDir === 'asc' ? -1 : 1;
+    if (va > vb) return sortDir === 'asc' ?  1 : -1;
+    return 0;
+  });
+
+  return list;
 }
 
-function render() {
-  const linesB = db.products.filter(p => p.butikk > 0).length;
-  const linesE = db.products.filter(p => p.ekstern > 0).length;
-  const total  = db.products.reduce((s, p) => s + p.butikk + p.ekstern, 0);
-  countButikk.textContent  = linesB;
-  countEkstern.textContent = linesE;
-  countTotal.textContent   = total;
-
-  const list = filteredProducts();
-  if (list.length === 0) {
-    productBody.innerHTML  = '';
-    productCards.innerHTML = '';
-    emptyState.classList.remove('hidden');
-    return;
-  }
-  emptyState.classList.add('hidden');
-
-  const moveBtns = p =>
+function rowHtml(p) {
+  const moveBtns =
     (p.ekstern > 0 ? `<button class="btn-action btn-move" data-id="${p.id}" data-dir="til-butikk">🏪 Til butikk</button>` : '') +
     (p.butikk  > 0 ? `<button class="btn-action btn-move" data-id="${p.id}" data-dir="til-ekstern">🏭 Til ekstern</button>` : '');
-
-  productBody.innerHTML = list.map(p => `
+  return `
     <tr>
       <td>
         <div class="prod-name">${esc(p.navn)}</div>
@@ -215,14 +212,16 @@ function render() {
       <td>${locBadgeHtml(p)}</td>
       <td class="center">
         <div class="action-cell">
-          ${moveBtns(p)}
+          ${moveBtns}
           <button class="btn-action btn-edit"   data-id="${p.id}">Rediger</button>
           <button class="btn-action btn-delete" data-id="${p.id}">Slett</button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+}
 
-  productCards.innerHTML = list.map(p => `
+function cardHtml(p) {
+  return `
     <div class="prod-card">
       <div class="pc-top">
         <div class="pc-name">${esc(p.navn)}</div>
@@ -256,7 +255,48 @@ function render() {
         <button class="btn-action btn-edit"   data-id="${p.id}">✏️ Rediger</button>
         <button class="btn-action btn-delete" data-id="${p.id}">🗑️ Slett</button>
       </div>
-    </div>`).join('');
+    </div>`;
+}
+
+function groupedHtml(list, itemFn, headerFn) {
+  const order = [...new Set(db.products.map(p => p.kategori))];
+  const groups = {};
+  list.forEach(p => { (groups[p.kategori] = groups[p.kategori] || []).push(p); });
+  return order.filter(k => groups[k]).map(k => headerFn(k) + groups[k].map(itemFn).join('')).join('');
+}
+
+function render() {
+  const linesB = db.products.filter(p => p.butikk > 0).length;
+  const linesE = db.products.filter(p => p.ekstern > 0).length;
+  const total  = db.products.reduce((s, p) => s + p.butikk + p.ekstern, 0);
+  countButikk.textContent  = linesB;
+  countEkstern.textContent = linesE;
+  countTotal.textContent   = total;
+
+  // Update sort indicators
+  document.querySelectorAll('#tableHead th').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.sort === sortField) th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  });
+
+  const list = filteredProducts();
+  if (list.length === 0) {
+    productBody.innerHTML  = '';
+    productCards.innerHTML = '';
+    emptyState.classList.remove('hidden');
+    return;
+  }
+  emptyState.classList.add('hidden');
+
+  if (groupByKategori) {
+    productBody.innerHTML  = groupedHtml(list, rowHtml,
+      k => `<tr class="cat-header-row"><td colspan="8"><span class="cat-header-label">${esc(k)}</span></td></tr>`);
+    productCards.innerHTML = groupedHtml(list, cardHtml,
+      k => `<div class="cat-header-card">${esc(k)}</div>`);
+  } else {
+    productBody.innerHTML  = list.map(rowHtml).join('');
+    productCards.innerHTML = list.map(cardHtml).join('');
+  }
 }
 
 // ── Produktskjema ─────────────────────────────────────────────────────────────
@@ -411,6 +451,26 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 
 searchInput.addEventListener('input', () => { searchQuery = searchInput.value.trim(); render(); });
 clearSearch.addEventListener('click',  () => { searchInput.value = ''; searchQuery = ''; render(); searchInput.focus(); });
+
+document.getElementById('tableHead').addEventListener('click', e => {
+  const th = e.target.closest('th[data-sort]');
+  if (!th) return;
+  const field = th.dataset.sort;
+  if (sortField === field) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField = field;
+    sortDir   = 'asc';
+  }
+  render();
+});
+
+document.getElementById('btnGrupper').addEventListener('click', function () {
+  groupByKategori = !groupByKategori;
+  this.dataset.active = groupByKategori;
+  this.classList.toggle('active', groupByKategori);
+  render();
+});
 
 // ── Modal-koblinger ───────────────────────────────────────────────────────────
 

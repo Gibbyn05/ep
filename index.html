@@ -70,6 +70,7 @@
         <button class="filter-btn" data-filter="begge">
           <span>↔️</span> Begge steder
         </button>
+        <button class="filter-btn" id="btnGrupper" data-active="false">📂 Grupper</button>
       </div>
       <button class="btn-primary" id="btnLeggTil">+ Legg til produkt</button>
     </section>
@@ -77,14 +78,14 @@
     <!-- Product list -->
     <section class="product-section">
       <table class="product-table" id="productTable">
-        <thead>
+        <thead id="tableHead">
           <tr>
-            <th>Produkt</th>
-            <th>Artikkelnr.</th>
-            <th>Pris</th>
-            <th class="center">🏪 Butikk</th>
-            <th class="center">🏭 Ekstern</th>
-            <th class="center">Totalt</th>
+            <th class="sortable" data-sort="navn">Produkt</th>
+            <th class="sortable" data-sort="artikkel">Artikkelnr.</th>
+            <th class="sortable" data-sort="pris">Pris</th>
+            <th class="center sortable" data-sort="butikk">🏪 Butikk</th>
+            <th class="center sortable" data-sort="ekstern">🏭 Ekstern</th>
+            <th class="center sortable" data-sort="total">Totalt</th>
             <th>Plassering</th>
             <th class="center">Handlinger</th>
           </tr>

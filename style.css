@@ -370,6 +370,15 @@ main {
   opacity: .6;
 }
 .product-table th.center { text-align: center; }
+.product-table th.sortable { cursor: pointer; user-select: none; }
+.product-table th.sortable:hover { opacity: 1; color: var(--red); }
+.product-table th.sort-asc  { opacity: 1; color: var(--dark); }
+.product-table th.sort-asc::after  { content: ' ▲'; font-size: .65rem; color: var(--green); }
+.product-table th.sort-desc { opacity: 1; color: var(--dark); }
+.product-table th.sort-desc::after { content: ' ▼'; font-size: .65rem; color: var(--red); }
+.cat-header-row td { background: var(--gray-100); padding: 6px 14px; }
+.cat-header-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gray-600); }
+.cat-header-card { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gray-600); padding: 8px 4px 2px; width: 100%; }
 .product-table tbody tr {
   border-bottom: 1px solid var(--gray-200);
   transition: background .1s;
