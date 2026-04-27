@@ -2,8 +2,8 @@
 
 // ── Supabase konfigurasjon ────────────────────────────────────────────────────
 // Fyll inn dine verdier fra: supabase.com → prosjekt → Settings → API
-const SUPABASE_URL = 'https://DITT_PROSJEKT.supabase.co';
-const SUPABASE_KEY = 'din_anon_public_nøkkel';
+const SUPABASE_URL = 'https://vpchssbdbhghfbtcjnts.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwY2hzc2JkYmhnaGZidGNqbnRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMDc4MjEsImV4cCI6MjA5Mjg4MzgyMX0.38VSQKGL5XoxUAy5XhZL7spxeGF3utrbkixS6mOoRWs';
 
 const { createClient } = window.supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
