@@ -64,6 +64,8 @@ async function init() {
   if (error) {
     setConnStatus('offline', 'Tilkoblingsfeil');
     console.error(error);
+    const loadingBox = document.querySelector('.loading-box');
+    if (loadingBox) loadingBox.innerHTML = `<p style="color:#E3000F;font-weight:600">Tilkoblingsfeil</p><p style="font-size:0.85rem;color:#555">${error.message}</p><p style="font-size:0.8rem;color:#888">Sjekk at setup.sql er kjørt i Supabase</p>`;
     return;
   }
   db.products = data;
