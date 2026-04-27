@@ -17,6 +17,10 @@
       </div>
       <div class="header-divider"></div>
       <h1>Lagerstyring – Hagemøbler</h1>
+      <div class="conn-status" id="connStatus">
+        <span class="conn-dot"></span>
+        <span class="conn-label" id="connLabel">Kobler til...</span>
+      </div>
     </div>
   </header>
 
@@ -184,6 +188,14 @@
           <button class="btn-primary" id="confirmTransfer">Flytt</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Laster inn -->
+  <div id="loading" class="loading-overlay">
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <p>Kobler til server...</p>
     </div>
   </div>
 
