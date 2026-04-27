@@ -1,56 +1,16 @@
 'use strict';
 
-// ── WebSocket-tilkobling ──────────────────────────────────────────────────────
+// ── Supabase konfigurasjon ────────────────────────────────────────────────────
+// Fyll inn dine verdier fra: supabase.com → prosjekt → Settings → API
+const SUPABASE_URL = 'https://DITT_PROSJEKT.supabase.co';
+const SUPABASE_KEY = 'din_anon_public_nøkkel';
 
-let ws        = null;
-let db        = null;  // null = ikke mottatt fra server ennå
-let reconnectTimer = null;
-
-function wsConnect() {
-  clearTimeout(reconnectTimer);
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${proto}://${location.host}`);
-
-  ws.onopen = () => {
-    setConnStatus('online', 'Tilkoblet');
-  };
-
-  ws.onmessage = e => {
-    try {
-      const msg = JSON.parse(e.data);
-      if (msg.type === 'sync' && msg.data) {
-        db = msg.data;
-        hideLoading();
-        render();
-      }
-    } catch {}
-  };
-
-  ws.onclose = () => {
-    setConnStatus('offline', 'Frakoblet – kobler til igjen...');
-    reconnectTimer = setTimeout(wsConnect, 3000);
-  };
-
-  ws.onerror = () => ws.close();
-}
-
-function saveData(data) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'update', data }));
-  }
-}
-
-function setConnStatus(state, label) {
-  connStatus.className = 'conn-status ' + state;
-  connLabel.textContent = label;
-}
-
-function hideLoading() {
-  document.getElementById('loading').classList.add('hidden');
-}
+const { createClient } = window.supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
+let db           = { products: [] };
 let activeFilter = 'alle';
 let searchQuery  = '';
 let transferCtx  = null;
@@ -95,7 +55,71 @@ const connStatus         = document.getElementById('connStatus');
 const connLabel          = document.getElementById('connLabel');
 const toast              = document.getElementById('toast');
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Supabase: sanntid og data ─────────────────────────────────────────────────
+
+async function init() {
+  setConnStatus('offline', 'Kobler til...');
+
+  const { data, error } = await sb.from('products').select('*').order('id');
+  if (error) {
+    setConnStatus('offline', 'Tilkoblingsfeil');
+    console.error(error);
+    return;
+  }
+  db.products = data;
+  document.getElementById('loading').classList.add('hidden');
+  render();
+
+  // Abonner på sanntidsendringer fra alle enheter
+  sb.channel('products')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'products' },
+      payload => {
+        if (payload.eventType === 'INSERT') {
+          if (!db.products.find(p => p.id === payload.new.id)) {
+            db.products.push(payload.new);
+            db.products.sort((a, b) => a.id - b.id);
+          }
+        } else if (payload.eventType === 'UPDATE') {
+          const idx = db.products.findIndex(p => p.id === payload.new.id);
+          if (idx !== -1) db.products[idx] = payload.new;
+        } else if (payload.eventType === 'DELETE') {
+          db.products = db.products.filter(p => p.id !== payload.old.id);
+        }
+        render();
+      }
+    )
+    .subscribe(status => {
+      if (status === 'SUBSCRIBED') {
+        setConnStatus('online', 'Tilkoblet');
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        setConnStatus('offline', 'Frakoblet');
+      }
+    });
+}
+
+function setConnStatus(state, label) {
+  connStatus.className = 'conn-status ' + state;
+  connLabel.textContent = label;
+}
+
+// ── DB-operasjoner ────────────────────────────────────────────────────────────
+
+async function dbUpdate(id, changes) {
+  const { error } = await sb.from('products').update(changes).eq('id', id);
+  if (error) { showToast('⚠️ Lagring feilet'); console.error(error); }
+}
+
+async function dbInsert(product) {
+  const { error } = await sb.from('products').insert(product);
+  if (error) { showToast('⚠️ Lagring feilet'); console.error(error); }
+}
+
+async function dbDelete(id) {
+  const { error } = await sb.from('products').delete().eq('id', id);
+  if (error) { showToast('⚠️ Sletting feilet'); console.error(error); }
+}
+
+// ── Hjelpefunksjoner ──────────────────────────────────────────────────────────
 
 function locationOf(p) {
   if (p.butikk > 0 && p.ekstern > 0) return 'begge';
@@ -105,20 +129,18 @@ function locationOf(p) {
 }
 
 function locBadgeHtml(p) {
-  const loc = locationOf(p);
   const map = {
     butikk:  ['loc-butikk',  '🏪 Butikk'],
     ekstern: ['loc-ekstern', '🏭 Eksternlager'],
     begge:   ['loc-begge',   '↔️ Begge steder'],
     ingen:   ['loc-ingen',   '— Ingen'],
   };
-  const [cls, label] = map[loc];
+  const [cls, label] = map[locationOf(p)];
   return `<span class="loc-badge ${cls}">${label}</span>`;
 }
 
 function qtyBadge(n, cls) {
-  const zero = n === 0 ? ' qty-zero' : '';
-  return `<span class="qty-badge ${cls}${zero}">${n}</span>`;
+  return `<span class="qty-badge ${cls}${n === 0 ? ' qty-zero' : ''}">${n}</span>`;
 }
 
 function formatPris(pris) {
@@ -135,43 +157,35 @@ function showToast(msg) {
 
 function esc(s) {
   return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
 
 function filteredProducts() {
-  if (!db) return [];
   return db.products.filter(p => {
     if (activeFilter !== 'alle' && locationOf(p) !== activeFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      return (
-        p.navn.toLowerCase().includes(q) ||
-        p.artikkel.toLowerCase().includes(q) ||
-        p.kategori.toLowerCase().includes(q) ||
-        p.notat.toLowerCase().includes(q)
-      );
+      return p.navn.toLowerCase().includes(q) ||
+             p.artikkel.toLowerCase().includes(q) ||
+             p.kategori.toLowerCase().includes(q) ||
+             p.notat.toLowerCase().includes(q);
     }
     return true;
   });
 }
 
 function render() {
-  if (!db) return;
-
-  const linesButikk  = db.products.filter(p => p.butikk > 0).length;
-  const linesEkstern = db.products.filter(p => p.ekstern > 0).length;
-  const totalUnits   = db.products.reduce((s, p) => s + p.butikk + p.ekstern, 0);
-  countButikk.textContent  = linesButikk;
-  countEkstern.textContent = linesEkstern;
-  countTotal.textContent   = totalUnits;
+  const linesB = db.products.filter(p => p.butikk > 0).length;
+  const linesE = db.products.filter(p => p.ekstern > 0).length;
+  const total  = db.products.reduce((s, p) => s + p.butikk + p.ekstern, 0);
+  countButikk.textContent  = linesB;
+  countEkstern.textContent = linesE;
+  countTotal.textContent   = total;
 
   const list = filteredProducts();
-
   if (list.length === 0) {
     productBody.innerHTML  = '';
     productCards.innerHTML = '';
@@ -184,7 +198,6 @@ function render() {
     (p.ekstern > 0 ? `<button class="btn-action btn-move" data-id="${p.id}" data-dir="til-butikk">🏪 Til butikk</button>` : '') +
     (p.butikk  > 0 ? `<button class="btn-action btn-move" data-id="${p.id}" data-dir="til-ekstern">🏭 Til ekstern</button>` : '');
 
-  // ── Tabellrader (desktop) ─────────────────────────────────────
   productBody.innerHTML = list.map(p => `
     <tr>
       <td>
@@ -205,10 +218,8 @@ function render() {
           <button class="btn-action btn-delete" data-id="${p.id}">Slett</button>
         </div>
       </td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
 
-  // ── Kort (mobil) ──────────────────────────────────────────────
   productCards.innerHTML = list.map(p => `
     <div class="prod-card">
       <div class="pc-top">
@@ -224,18 +235,18 @@ function render() {
         <div class="pc-qty-item">
           <span class="pc-qty-label">🏪 Butikk</span>
           <div class="qty-stepper">
-            <button class="qty-step qty-dec" data-id="${p.id}" data-field="butikk" aria-label="Minus">−</button>
+            <button class="qty-step qty-dec" data-id="${p.id}" data-field="butikk">−</button>
             <span class="qty-num ${p.butikk === 0 ? 'qty-num-zero' : 'qty-num-green'}">${p.butikk}</span>
-            <button class="qty-step qty-inc" data-id="${p.id}" data-field="butikk" aria-label="Pluss">+</button>
+            <button class="qty-step qty-inc" data-id="${p.id}" data-field="butikk">+</button>
           </div>
         </div>
         <div class="pc-qty-sep"></div>
         <div class="pc-qty-item">
           <span class="pc-qty-label">🏭 Ekstern</span>
           <div class="qty-stepper">
-            <button class="qty-step qty-dec" data-id="${p.id}" data-field="ekstern" aria-label="Minus">−</button>
+            <button class="qty-step qty-dec" data-id="${p.id}" data-field="ekstern">−</button>
             <span class="qty-num ${p.ekstern === 0 ? 'qty-num-zero' : 'qty-num-red'}">${p.ekstern}</span>
-            <button class="qty-step qty-inc" data-id="${p.id}" data-field="ekstern" aria-label="Pluss">+</button>
+            <button class="qty-step qty-inc" data-id="${p.id}" data-field="ekstern">+</button>
           </div>
         </div>
       </div>
@@ -243,8 +254,7 @@ function render() {
         <button class="btn-action btn-edit"   data-id="${p.id}">✏️ Rediger</button>
         <button class="btn-action btn-delete" data-id="${p.id}">🗑️ Slett</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 // ── Produktskjema ─────────────────────────────────────────────────────────────
@@ -252,8 +262,8 @@ function render() {
 function openAddModal() {
   modalTitle.textContent = 'Legg til produkt';
   productForm.reset();
-  editIdField.value  = '';
-  fieldButikk.value  = 0;
+  editIdField.value = '';
+  fieldButikk.value = 0;
   fieldEkstern.value = 0;
   modalProduct.classList.remove('hidden');
   setTimeout(() => fieldNavn.focus(), 50);
@@ -262,24 +272,22 @@ function openAddModal() {
 function openEditModal(id) {
   const p = db.products.find(x => x.id === id);
   if (!p) return;
-  modalTitle.textContent  = 'Rediger produkt';
-  editIdField.value       = p.id;
-  fieldNavn.value         = p.navn;
-  fieldArtikkel.value     = p.artikkel;
-  fieldKategori.value     = p.kategori;
-  fieldPris.value         = p.pris || '';
-  fieldNotat.value        = p.notat;
-  fieldButikk.value       = p.butikk;
-  fieldEkstern.value      = p.ekstern;
+  modalTitle.textContent = 'Rediger produkt';
+  editIdField.value  = p.id;
+  fieldNavn.value    = p.navn;
+  fieldArtikkel.value = p.artikkel;
+  fieldKategori.value = p.kategori;
+  fieldPris.value    = p.pris || '';
+  fieldNotat.value   = p.notat;
+  fieldButikk.value  = p.butikk;
+  fieldEkstern.value = p.ekstern;
   modalProduct.classList.remove('hidden');
   setTimeout(() => fieldNavn.focus(), 50);
 }
 
-function closeProductModal() {
-  modalProduct.classList.add('hidden');
-}
+function closeProductModal() { modalProduct.classList.add('hidden'); }
 
-productForm.addEventListener('submit', e => {
+productForm.addEventListener('submit', async e => {
   e.preventDefault();
   const id = editIdField.value ? parseInt(editIdField.value) : null;
   const data = {
@@ -292,18 +300,22 @@ productForm.addEventListener('submit', e => {
     ekstern:  Math.max(0, parseInt(fieldEkstern.value) || 0),
   };
 
+  closeProductModal();
+
   if (id) {
     const idx = db.products.findIndex(x => x.id === id);
-    if (idx !== -1) db.products[idx] = { ...db.products[idx], ...data };
+    if (idx !== -1) { db.products[idx] = { ...db.products[idx], ...data }; render(); }
+    await dbUpdate(id, data);
     showToast('Produkt oppdatert');
   } else {
-    db.products.push({ id: Date.now(), ...data });
+    const newId = Date.now();
+    const newProduct = { id: newId, ...data };
+    db.products.push(newProduct);
+    db.products.sort((a, b) => a.id - b.id);
+    render();
+    await dbInsert(newProduct);
     showToast('Produkt lagt til');
   }
-
-  saveData(db);
-  closeProductModal();
-  render();
 });
 
 // ── Flytt-modal ───────────────────────────────────────────────────────────────
@@ -312,59 +324,50 @@ function openTransferModal(id, direction) {
   const p = db.products.find(x => x.id === id);
   if (!p) return;
   transferCtx = { productId: id, direction };
-
   const isTilButikk = direction === 'til-butikk';
-  const avail    = isTilButikk ? p.ekstern : p.butikk;
-  const fraLabel = isTilButikk ? '🏭 Eksternlager' : '🏪 Butikk';
-  const tilLabel = isTilButikk ? '🏪 Butikk'       : '🏭 Eksternlager';
-
   transferTitle.textContent = isTilButikk ? 'Flytt: Eksternlager → Butikk' : 'Flytt: Butikk → Eksternlager';
   transferInfo.textContent  = p.navn;
-  fromName.textContent      = fraLabel;
-  toName.textContent        = tilLabel;
-  fromAvail.textContent     = avail;
-  transferQty.value         = 1;
-  transferQty.max           = avail;
+  fromName.textContent = isTilButikk ? '🏭 Eksternlager' : '🏪 Butikk';
+  toName.textContent   = isTilButikk ? '🏪 Butikk'       : '🏭 Eksternlager';
+  fromAvail.textContent = isTilButikk ? p.ekstern : p.butikk;
+  transferQty.value = 1;
+  transferQty.max   = isTilButikk ? p.ekstern : p.butikk;
   transferError.classList.add('hidden');
   modalTransfer.classList.remove('hidden');
   setTimeout(() => { transferQty.focus(); transferQty.select(); }, 50);
 }
 
-function closeTransferModal() {
-  modalTransfer.classList.add('hidden');
-  transferCtx = null;
-}
+function closeTransferModal() { modalTransfer.classList.add('hidden'); transferCtx = null; }
 
-confirmTransfer.addEventListener('click', () => {
+confirmTransfer.addEventListener('click', async () => {
   if (!transferCtx) return;
   const p = db.products.find(x => x.id === transferCtx.productId);
   if (!p) return;
-
   const qty   = parseInt(transferQty.value) || 0;
   const avail = transferCtx.direction === 'til-butikk' ? p.ekstern : p.butikk;
-
   if (qty <= 0)    { transferError.textContent = 'Antall må være minst 1'; transferError.classList.remove('hidden'); return; }
   if (qty > avail) { transferError.textContent = `Maks ${avail} tilgjengelig`; transferError.classList.remove('hidden'); return; }
 
   const dest = transferCtx.direction === 'til-butikk' ? 'butikk' : 'eksternlager';
-  if (transferCtx.direction === 'til-butikk') { p.ekstern -= qty; p.butikk += qty; }
-  else                                          { p.butikk -= qty; p.ekstern += qty; }
+  const changes = transferCtx.direction === 'til-butikk'
+    ? { butikk: p.butikk + qty, ekstern: p.ekstern - qty }
+    : { butikk: p.butikk - qty, ekstern: p.ekstern + qty };
 
-  saveData(db);
-  closeTransferModal();
+  Object.assign(p, changes);
   render();
+  closeTransferModal();
+  await dbUpdate(p.id, changes);
   showToast(`${qty} stk. «${p.navn}» → ${dest}`);
 });
 
 // ── Slett ─────────────────────────────────────────────────────────────────────
 
-function deleteProduct(id) {
+async function deleteProduct(id) {
   const p = db.products.find(x => x.id === id);
-  if (!p) return;
-  if (!confirm(`Slett «${p.navn}»?`)) return;
+  if (!p || !confirm(`Slett «${p.navn}»?`)) return;
   db.products = db.products.filter(x => x.id !== id);
-  saveData(db);
   render();
+  await dbDelete(id);
   showToast('Produkt slettet');
 }
 
@@ -375,15 +378,13 @@ function handleProductClick(e) {
   if (step) {
     const p = db.products.find(x => x.id === parseInt(step.dataset.id));
     if (!p) return;
-    const field = step.dataset.field;
-    p[field] = step.classList.contains('qty-inc')
-      ? p[field] + 1
-      : Math.max(0, p[field] - 1);
-    saveData(db);
+    const field  = step.dataset.field;
+    const newVal = step.classList.contains('qty-inc') ? p[field] + 1 : Math.max(0, p[field] - 1);
+    p[field] = newVal;
     render();
+    dbUpdate(p.id, { [field]: newVal });
     return;
   }
-
   const btn = e.target.closest('button[data-id]');
   if (!btn) return;
   const id = parseInt(btn.dataset.id);
@@ -395,7 +396,7 @@ function handleProductClick(e) {
 productBody.addEventListener('click', handleProductClick);
 productCards.addEventListener('click', handleProductClick);
 
-// ── Filter ────────────────────────────────────────────────────────────────────
+// ── Filtre og søk ─────────────────────────────────────────────────────────────
 
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -407,9 +408,9 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 });
 
 searchInput.addEventListener('input', () => { searchQuery = searchInput.value.trim(); render(); });
-clearSearch.addEventListener('click', () => { searchInput.value = ''; searchQuery = ''; render(); searchInput.focus(); });
+clearSearch.addEventListener('click',  () => { searchInput.value = ''; searchQuery = ''; render(); searchInput.focus(); });
 
-// ── Modal-tilkobling ──────────────────────────────────────────────────────────
+// ── Modal-koblinger ───────────────────────────────────────────────────────────
 
 btnLeggTil.addEventListener('click', openAddModal);
 fabLeggTil.addEventListener('click', openAddModal);
@@ -418,10 +419,10 @@ cancelProduct.addEventListener('click', closeProductModal);
 closeModalTransfer.addEventListener('click', closeTransferModal);
 cancelTransfer.addEventListener('click', closeTransferModal);
 
-modalProduct.addEventListener('click', e => { if (e.target === modalProduct) closeProductModal(); });
+modalProduct.addEventListener('click',  e => { if (e.target === modalProduct)  closeProductModal(); });
 modalTransfer.addEventListener('click', e => { if (e.target === modalTransfer) closeTransferModal(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeProductModal(); closeTransferModal(); } });
+document.addEventListener('keydown',    e => { if (e.key === 'Escape') { closeProductModal(); closeTransferModal(); } });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 
-wsConnect();
+init();
