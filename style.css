@@ -47,14 +47,14 @@ body {
 
 /* ── Header ───────────────────────────────────────────────────── */
 header {
-  background: var(--yellow);
+  background: var(--white);
   padding: 0 20px;
   padding-top: var(--safe-top);
-  border-bottom: 4px solid var(--red);
+  border-bottom: 3px solid var(--red);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 3px 10px rgba(0,0,0,.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
 }
 
 .header-inner {
@@ -74,13 +74,13 @@ header {
   flex-shrink: 0;
 }
 .logo-e    { color: var(--red); }
-.logo-uro  { color: var(--dark); }
+.logo-uro  { color: var(--red); }
 .logo-pris { color: var(--red); }
 
 .header-divider {
-  width: 2px;
-  height: 22px;
-  background: rgba(0,0,0,.2);
+  width: 1px;
+  height: 20px;
+  background: var(--gray-200);
   border-radius: 2px;
   flex-shrink: 0;
 }
@@ -88,8 +88,7 @@ header {
 header h1 {
   font-size: .95rem;
   font-weight: 600;
-  color: var(--dark);
-  opacity: .75;
+  color: var(--gray-600);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -215,8 +214,8 @@ main {
   -webkit-appearance: none;
 }
 .search-wrap input:focus {
-  border-color: var(--yellow-dark);
-  box-shadow: 0 0 0 3px rgba(255,209,0,.25);
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(227,0,15,.12);
 }
 #clearSearch {
   position: absolute;
@@ -258,10 +257,11 @@ main {
   flex-shrink: 0;
   min-height: 40px;
 }
-.filter-btn:hover { border-color: var(--yellow-dark); background: #fffbe0; }
+.filter-btn:hover { border-color: var(--red); color: var(--red); background: #fff0f0; }
 .filter-btn.active {
-  background: var(--yellow);
-  border-color: var(--yellow-dark);
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--white);
   font-weight: 700;
 }
 
@@ -639,13 +639,15 @@ main {
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px;
-  background: var(--yellow);
-  border-bottom: 3px solid var(--yellow-dark);
+  background: var(--red);
+  border-bottom: none;
   position: sticky;
   top: 0;
   z-index: 1;
 }
-.modal-header h2 { font-size: 1.05rem; color: var(--dark); }
+.modal-header h2 { font-size: 1.05rem; color: var(--white); font-weight: 700; }
+.modal-header .btn-icon { color: rgba(255,255,255,.8); }
+.modal-header .btn-icon:hover { background: rgba(255,255,255,.15); color: var(--white); }
 
 form, .transfer-body {
   padding: 18px 20px;
@@ -682,8 +684,8 @@ label input, label select {
   -webkit-appearance: none;
 }
 label input:focus, label select:focus {
-  border-color: var(--yellow-dark);
-  box-shadow: 0 0 0 3px rgba(255,209,0,.25);
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(227,0,15,.12);
 }
 
 .form-actions {
