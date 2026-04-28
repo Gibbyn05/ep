@@ -222,7 +222,7 @@ function rowHtml(p) {
 
 function cardHtml(p) {
   return `
-    <div class="prod-card">
+    <div class="prod-card" data-loc="${locationOf(p)}">
       <div class="pc-top">
         <div class="pc-name">${esc(p.navn)}</div>
         ${locBadgeHtml(p)}
