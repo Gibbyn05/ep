@@ -92,4 +92,15 @@ INSERT INTO products (id, navn, artikkel, kategori, pris, notat, butikk, ekstern
 -- Parasollfot
 (59, 'Parasollfot 25 kg granitt',                      '216341', 'Parasollfot', 449, '', 0, 0),
 (60, 'Parasollfot 35 kg granitt',                      '203730', 'Parasollfot', 999, '', 0, 0),
-(61, 'Parasollfot 30 kg betong',                       '112694', 'Parasollfot', 799, '', 0, 0);
+(61, 'Parasollfot 30 kg betong',                       '112694', 'Parasollfot', 799, '', 0, 0),
+-- Putekasse
+(62, 'Stor putekasse Homebox Ultra 985 liter',            '211956', 'Putekasse', 2999, '', 0, 0),
+(63, 'Stor vanntett putekasse galvanisert stål 600 liter','210930', 'Putekasse', 3499, '', 0, 0),
+(64, 'Stor vanntett putekasse Viborg skifergrå 582 liter','192667', 'Putekasse', 3499, '', 0, 0),
+(65, 'Stor vanntett putekasse Keter Darwin 662 liter',    '216711', 'Putekasse', 2999, '', 0, 0),
+(66, 'Stor vanntett putekasse Ontario Deco 870 liter',    '216710', 'Putekasse', 3499, '', 0, 0),
+(67, 'Liten vanntett putekasse Keter Emily 280 liter',    '216693', 'Putekasse',  699, '', 0, 0),
+(68, 'Medium vanntett putekasse Keter Kentwood 350 liter','197674', 'Putekasse',  999, '', 0, 0),
+(69, 'Stor vanntett putekasse Keter Northwood 630 liter', '197675', 'Putekasse', 1999, '', 0, 0),
+(70, 'Stor vanntett putekasse Keter Darwin brun 662 liter','216712','Putekasse', 3499, '', 0, 0),
+(71, 'Multibox Balcony Homebox 106 liter',                '211953', 'Putekasse',  399, '', 0, 0);
