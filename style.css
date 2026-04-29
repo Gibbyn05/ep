@@ -803,9 +803,6 @@ label input:focus, label select:focus {
   #btnLeggTil { display: none; } /* FAB tar over */
   .fab { display: flex; }
 
-  .product-table th:nth-child(3),
-  .product-table td:nth-child(3) { display: none; } /* Pris */
-
   .form-row { grid-template-columns: 1fr; gap: 10px; }
 }
 

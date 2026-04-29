@@ -37,7 +37,6 @@ const editIdField        = document.getElementById('editId');
 const fieldNavn          = document.getElementById('fieldNavn');
 const fieldArtikkel      = document.getElementById('fieldArtikkel');
 const fieldKategori      = document.getElementById('fieldKategori');
-const fieldPris          = document.getElementById('fieldPris');
 const fieldNotat         = document.getElementById('fieldNotat');
 const fieldButikk        = document.getElementById('fieldButikk');
 const fieldEkstern       = document.getElementById('fieldEkstern');
@@ -228,7 +227,6 @@ function rowHtml(p) {
         ${p.notat ? `<div class="prod-notat">${esc(p.notat)}</div>` : ''}
       </td>
       <td><span class="art-nr">${esc(p.artikkel) || '–'}</span></td>
-      <td class="pris-cell">${formatPris(p.pris)}</td>
       <td class="center">${qtyBadge(p.butikk, 'qty-butikk')}</td>
       <td class="center">${qtyBadge(p.ekstern, 'qty-ekstern')}</td>
       <td class="center">${qtyBadge(p.butikk + p.ekstern, 'qty-total')}</td>
@@ -253,7 +251,6 @@ function cardHtml(p) {
       <div class="pc-meta">
         <span class="prod-cat">${esc(p.kategori)}</span>
         ${p.artikkel ? `<span class="art-nr">${esc(p.artikkel)}</span>` : ''}
-        <span class="pc-pris">${formatPris(p.pris)}</span>
       </div>
       <div class="pc-qty-row">
         <div class="pc-qty-item">
@@ -342,7 +339,6 @@ function openEditModal(id) {
   fieldNavn.value    = p.navn;
   fieldArtikkel.value = p.artikkel;
   fieldKategori.value = p.kategori;
-  fieldPris.value    = p.pris || '';
   fieldNotat.value   = p.notat;
   fieldButikk.value  = p.butikk;
   fieldEkstern.value = p.ekstern;
@@ -359,7 +355,7 @@ productForm.addEventListener('submit', async e => {
     navn:     fieldNavn.value.trim(),
     artikkel: fieldArtikkel.value.trim(),
     kategori: fieldKategori.value,
-    pris:     parsePris(fieldPris.value),
+
     notat:    fieldNotat.value.trim(),
     butikk:   Math.max(0, parseInt(fieldButikk.value) || 0),
     ekstern:  Math.max(0, parseInt(fieldEkstern.value) || 0),
