@@ -153,6 +153,29 @@ function formatPris(pris) {
   return new Intl.NumberFormat('nb-NO').format(pris) + ' kr';
 }
 
+function parsePris(str) {
+  if (!str) return 0;
+  str = str.trim().replace(/\s/g, '');
+  const hasComma = str.includes(',');
+  const hasDot   = str.includes('.');
+  if (hasComma && hasDot) {
+    const lastComma = str.lastIndexOf(',');
+    const lastDot   = str.lastIndexOf('.');
+    str = lastComma > lastDot
+      ? str.replace(/\./g, '').replace(',', '.')   // "1.999,90"
+      : str.replace(/,/g, '');                      // "1,999.90"
+  } else if (hasComma) {
+    const after = str.split(',').pop();
+    str = after.length === 3
+      ? str.replace(',', '')       // "1,999" → tusen-separator
+      : str.replace(',', '.');     // "59,90" → desimal
+  } else if (hasDot) {
+    const after = str.split('.').pop();
+    if (after.length === 3) str = str.replace('.', ''); // "1.999"
+  }
+  return Math.round(parseFloat(str)) || 0;
+}
+
 function showToast(msg) {
   toast.textContent = msg;
   toast.classList.remove('hidden');
@@ -336,7 +359,7 @@ productForm.addEventListener('submit', async e => {
     navn:     fieldNavn.value.trim(),
     artikkel: fieldArtikkel.value.trim(),
     kategori: fieldKategori.value,
-    pris:     parseInt(fieldPris.value.replace(/[\s.,]/g, '')) || 0,
+    pris:     parsePris(fieldPris.value),
     notat:    fieldNotat.value.trim(),
     butikk:   Math.max(0, parseInt(fieldButikk.value) || 0),
     ekstern:  Math.max(0, parseInt(fieldEkstern.value) || 0),
