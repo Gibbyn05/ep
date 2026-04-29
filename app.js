@@ -336,7 +336,7 @@ productForm.addEventListener('submit', async e => {
     navn:     fieldNavn.value.trim(),
     artikkel: fieldArtikkel.value.trim(),
     kategori: fieldKategori.value,
-    pris:     parseInt(fieldPris.value) || 0,
+    pris:     parseInt(fieldPris.value.replace(/[\s.,]/g, '')) || 0,
     notat:    fieldNotat.value.trim(),
     butikk:   Math.max(0, parseInt(fieldButikk.value) || 0),
     ekstern:  Math.max(0, parseInt(fieldEkstern.value) || 0),
