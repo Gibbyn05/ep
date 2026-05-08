@@ -57,6 +57,14 @@ const confirmTransfer    = document.getElementById('confirmTransfer');
 const connStatus         = document.getElementById('connStatus');
 const connLabel          = document.getElementById('connLabel');
 const toast              = document.getElementById('toast');
+const modalDetail        = document.getElementById('modalDetail');
+const closeModalDetail   = document.getElementById('closeModalDetail');
+const detailTitle        = document.getElementById('detailTitle');
+const detailImg          = document.getElementById('detailImg');
+const detailImgPh        = document.getElementById('detailImgPlaceholder');
+const detailNavn         = document.getElementById('detailNavn');
+const detailMeta         = document.getElementById('detailMeta');
+const detailLoc          = document.getElementById('detailLoc');
 
 // ── Supabase: sanntid og data ─────────────────────────────────────────────────
 
@@ -176,6 +184,40 @@ function parsePris(str) {
   return Math.round(parseFloat(str)) || 0;
 }
 
+function bildeUrl(artikkel) {
+  if (!artikkel) return null;
+  const prefix = artikkel.substring(0, 2);
+  return `https://images2.europris.no/produkter/vw800/${prefix}/${artikkel}/${artikkel}_main.webp`;
+}
+
+function openDetailModal(id) {
+  const p = db.products.find(x => x.id === id);
+  if (!p) return;
+  detailTitle.textContent = p.navn;
+  detailNavn.textContent  = p.navn;
+  detailMeta.textContent  = [p.kategori, p.artikkel ? `Art. ${p.artikkel}` : ''].filter(Boolean).join(' · ');
+  detailLoc.innerHTML     = locBadgeHtml(p);
+
+  const url = bildeUrl(p.artikkel);
+  if (url) {
+    detailImg.src = url;
+    detailImg.classList.remove('hidden');
+    detailImgPh.classList.add('hidden');
+    detailImg.onerror = () => {
+      detailImg.classList.add('hidden');
+      detailImgPh.classList.remove('hidden');
+    };
+  } else {
+    detailImg.classList.add('hidden');
+    detailImgPh.classList.remove('hidden');
+  }
+  modalDetail.classList.remove('hidden');
+}
+
+function closeDetail() { modalDetail.classList.add('hidden'); }
+closeModalDetail.addEventListener('click', closeDetail);
+modalDetail.addEventListener('click', e => { if (e.target === modalDetail) closeDetail(); });
+
 function showToast(msg) {
   toast.textContent = msg;
   toast.classList.remove('hidden');
@@ -223,7 +265,7 @@ function rowHtml(p) {
   return `
     <tr>
       <td>
-        <div class="prod-name">${esc(p.navn)}</div>
+        <div class="prod-name prod-name-link" data-detail="${p.id}">${esc(p.navn)}</div>
         <span class="prod-cat">${esc(p.kategori)}</span>
         ${p.notat ? `<div class="prod-notat">${esc(p.notat)}</div>` : ''}
       </td>
@@ -246,7 +288,7 @@ function cardHtml(p) {
   return `
     <div class="prod-card" data-loc="${locationOf(p)}">
       <div class="pc-top">
-        <div class="pc-name">${esc(p.navn)}</div>
+        <div class="pc-name prod-name-link" data-detail="${p.id}">${esc(p.navn)}</div>
         ${locBadgeHtml(p)}
       </div>
       <div class="pc-meta">
@@ -460,6 +502,9 @@ confirmNo.addEventListener('click', hideConfirmBar);
 // ── Event-delegering ──────────────────────────────────────────────────────────
 
 function handleProductClick(e) {
+  const detail = e.target.closest('.prod-name-link');
+  if (detail) { openDetailModal(parseInt(detail.dataset.detail)); return; }
+
   const step = e.target.closest('.qty-step');
   if (step) {
     const p = db.products.find(x => x.id === parseInt(step.dataset.id));
@@ -533,7 +578,7 @@ cancelTransfer.addEventListener('click', closeTransferModal);
 
 modalProduct.addEventListener('click',  e => { if (e.target === modalProduct)  closeProductModal(); });
 modalTransfer.addEventListener('click', e => { if (e.target === modalTransfer) closeTransferModal(); });
-document.addEventListener('keydown',    e => { if (e.key === 'Escape') { closeProductModal(); closeTransferModal(); } });
+document.addEventListener('keydown',    e => { if (e.key === 'Escape') { closeProductModal(); closeTransferModal(); closeDetail(); } });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 

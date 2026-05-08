@@ -640,6 +640,39 @@ main {
   to   { transform: translateY(0);    opacity: 1; }
 }
 
+/* ── Produktdetaljer modal ────────────────────────────────────── */
+.modal-detail { max-width: 420px; }
+.detail-body { padding: 0 0 20px; }
+.detail-img-wrap {
+  width: 100%;
+  background: var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  overflow: hidden;
+}
+.detail-img {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  display: block;
+}
+.detail-img-placeholder {
+  font-size: 5rem;
+  color: var(--gray-400);
+  padding: 40px;
+  text-align: center;
+}
+.detail-info { padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+.detail-navn { font-size: 1.05rem; font-weight: 700; line-height: 1.3; }
+.detail-meta { font-size: .82rem; color: var(--gray-600); }
+.detail-loc  { margin-top: 4px; }
+
+.prod-name-link { cursor: pointer; }
+.prod-name-link:hover { text-decoration: underline; color: var(--red); }
+.pc-name.prod-name-link:hover { color: var(--red); }
+
 .modal-header {
   display: flex;
   align-items: center;

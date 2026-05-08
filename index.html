@@ -101,6 +101,27 @@
     </section>
   </main>
 
+  <!-- Modal: Produktdetaljer -->
+  <div class="modal-overlay hidden" id="modalDetail">
+    <div class="modal modal-detail">
+      <div class="modal-header">
+        <h2 id="detailTitle">Produktdetaljer</h2>
+        <button class="btn-icon" id="closeModalDetail">✕</button>
+      </div>
+      <div class="detail-body">
+        <div class="detail-img-wrap">
+          <img id="detailImg" src="" alt="" class="detail-img" />
+          <div id="detailImgPlaceholder" class="detail-img-placeholder hidden">📦</div>
+        </div>
+        <div class="detail-info">
+          <div class="detail-navn" id="detailNavn"></div>
+          <div class="detail-meta" id="detailMeta"></div>
+          <div id="detailLoc" class="detail-loc"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Add/Edit product -->
   <div class="modal-overlay hidden" id="modalProduct">
     <div class="modal">
