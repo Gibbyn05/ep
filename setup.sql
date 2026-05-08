@@ -2,7 +2,7 @@
 -- Europris lagerstyring – kjør dette i Supabase SQL-editor
 -- ════════════════════════════════════════════════════════════════
 
--- 1. Lag tabell
+-- 1. Lag tabeller
 CREATE TABLE products (
   id       BIGINT  PRIMARY KEY,
   navn     TEXT    NOT NULL DEFAULT '',
@@ -14,12 +14,25 @@ CREATE TABLE products (
   ekstern  INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE TABLE logs (
+  id        BIGSERIAL PRIMARY KEY,
+  tidspunkt TIMESTAMPTZ NOT NULL DEFAULT now(),
+  handling  TEXT NOT NULL,
+  produkt   TEXT NOT NULL DEFAULT '',
+  detaljer  TEXT NOT NULL DEFAULT ''
+);
+
 -- 2. Aktiver sanntid (Realtime)
 ALTER PUBLICATION supabase_realtime ADD TABLE products;
+ALTER PUBLICATION supabase_realtime ADD TABLE logs;
 
 -- 3. Åpen tilgang uten innlogging (internt verktøy)
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "open" ON products FOR ALL TO anon, authenticated
+  USING (true) WITH CHECK (true);
+
+ALTER TABLE logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "open" ON logs FOR ALL TO anon, authenticated
   USING (true) WITH CHECK (true);
 
 -- 4. Fyll inn alle Europris-produkter

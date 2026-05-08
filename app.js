@@ -10,7 +10,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-let db               = { products: [] };
+let db               = { products: [], logs: [] };
 let activeFilter     = 'alle';
 let searchQuery      = '';
 let transferCtx      = null;
@@ -80,10 +80,14 @@ async function init() {
     return;
   }
   db.products = data;
+
+  const { data: logData } = await sb.from('logs').select('*').order('tidspunkt', { ascending: false }).limit(50);
+  db.logs = logData || [];
+
   document.getElementById('loading').classList.add('hidden');
   render();
+  renderLogs();
 
-  // Abonner på sanntidsendringer fra alle enheter
   sb.channel('products')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'products' },
       payload => {
@@ -102,12 +106,19 @@ async function init() {
       }
     )
     .subscribe(status => {
-      if (status === 'SUBSCRIBED') {
-        setConnStatus('online', 'Tilkoblet');
-      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        setConnStatus('offline', 'Frakoblet');
-      }
+      if (status === 'SUBSCRIBED') setConnStatus('online', 'Tilkoblet');
+      else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') setConnStatus('offline', 'Frakoblet');
     });
+
+  sb.channel('logs')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'logs' },
+      payload => {
+        db.logs.unshift(payload.new);
+        if (db.logs.length > 50) db.logs.pop();
+        renderLogs();
+      }
+    )
+    .subscribe();
 }
 
 function setConnStatus(state, label) {
@@ -125,6 +136,10 @@ async function dbUpdate(id, changes) {
 async function dbInsert(product) {
   const { error } = await sb.from('products').insert(product);
   if (error) { showToast('⚠️ Lagring feilet'); console.error(error); }
+}
+
+async function dbLog(handling, produkt, detaljer = '') {
+  await sb.from('logs').insert({ handling, produkt, detaljer });
 }
 
 async function dbDelete(id) {
@@ -217,6 +232,39 @@ function openDetailModal(id) {
 function closeDetail() { modalDetail.classList.add('hidden'); }
 closeModalDetail.addEventListener('click', closeDetail);
 modalDetail.addEventListener('click', e => { if (e.target === modalDetail) closeDetail(); });
+
+// ── Logg ──────────────────────────────────────────────────────────────────────
+
+const logList   = document.getElementById('logList');
+const logToggle = document.getElementById('logToggle');
+const logArrow  = document.getElementById('logArrow');
+let logOpen     = false;
+
+logToggle.addEventListener('click', () => {
+  logOpen = !logOpen;
+  logList.classList.toggle('hidden', !logOpen);
+  logArrow.textContent = logOpen ? '▲' : '▼';
+});
+
+function renderLogs() {
+  if (!db.logs.length) {
+    logList.innerHTML = '<div class="log-empty">Ingen hendelser ennå</div>';
+    return;
+  }
+  const ikonMap = { 'Lagt til': '➕', 'Fjernet': '➖', 'Flytt': '↔️', 'Redigert': '✏️', 'Slettet': '🗑️', 'Ny': '🆕' };
+  logList.innerHTML = db.logs.map(l => {
+    const ikon = Object.entries(ikonMap).find(([k]) => l.handling.startsWith(k))?.[1] ?? '📝';
+    const tid  = new Date(l.tidspunkt).toLocaleString('nb-NO', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    return `<div class="log-entry">
+      <span class="log-ikon">${ikon}</span>
+      <div class="log-content">
+        <div class="log-handling">${esc(l.handling)}</div>
+        <div class="log-produkt">${esc(l.produkt)}</div>
+      </div>
+      <span class="log-tid">${tid}</span>
+    </div>`;
+  }).join('');
+}
 
 function showToast(msg) {
   toast.textContent = msg;
@@ -410,6 +458,7 @@ productForm.addEventListener('submit', async e => {
     const idx = db.products.findIndex(x => x.id === id);
     if (idx !== -1) { db.products[idx] = { ...db.products[idx], ...data }; render(); }
     await dbUpdate(id, data);
+    dbLog('Redigert', data.navn);
     showToast('Produkt oppdatert');
   } else {
     const newId = Date.now();
@@ -418,6 +467,7 @@ productForm.addEventListener('submit', async e => {
     db.products.sort((a, b) => a.id - b.id);
     render();
     await dbInsert(newProduct);
+    dbLog('Ny', data.navn, 'Produkt lagt til');
     showToast('Produkt lagt til');
   }
 });
@@ -461,6 +511,7 @@ confirmTransfer.addEventListener('click', async () => {
   render();
   closeTransferModal();
   await dbUpdate(p.id, changes);
+  dbLog('Flytt', p.navn, `${qty} stk → ${dest}`);
   showToast(`${qty} stk. «${p.navn}» → ${dest}`);
 });
 
@@ -469,9 +520,11 @@ confirmTransfer.addEventListener('click', async () => {
 async function deleteProduct(id) {
   const p = db.products.find(x => x.id === id);
   if (!p || !confirm(`Slett «${p.navn}»?`)) return;
+  const navn = p.navn;
   db.products = db.products.filter(x => x.id !== id);
   render();
   await dbDelete(id);
+  dbLog('Slettet', navn);
   showToast('Produkt slettet');
 }
 
@@ -519,6 +572,7 @@ function handleProductClick(e) {
       p[field] = newVal;
       render();
       dbUpdate(p.id, { [field]: newVal });
+      dbLog(isInc ? 'Lagt til' : 'Fjernet', p.navn, `1 stk i ${sted}`);
     });
     return;
   }

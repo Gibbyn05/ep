@@ -783,6 +783,46 @@ label input:focus, label select:focus {
   box-shadow: 0 0 0 3px rgba(22,163,74,.15);
 }
 
+/* ── Oppdateringslogg ─────────────────────────────────────────── */
+.log-section {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.log-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--dark);
+  text-align: left;
+}
+.log-toggle:hover { background: var(--gray-100); }
+.log-toggle-arrow { font-size: .75rem; color: var(--gray-400); }
+.log-list { border-top: 1px solid var(--gray-200); max-height: 320px; overflow-y: auto; }
+.log-empty { padding: 20px; text-align: center; color: var(--gray-400); font-size: .88rem; }
+.log-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--gray-100);
+  font-size: .85rem;
+}
+.log-entry:last-child { border-bottom: none; }
+.log-ikon { font-size: 1.1rem; flex-shrink: 0; }
+.log-content { flex: 1; min-width: 0; }
+.log-handling { font-weight: 600; color: var(--dark); }
+.log-produkt  { font-size: .78rem; color: var(--gray-600); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-tid { font-size: .75rem; color: var(--gray-400); white-space: nowrap; flex-shrink: 0; }
+
 /* ── Bekreftelsesbar ──────────────────────────────────────────── */
 .confirm-bar {
   position: fixed;
