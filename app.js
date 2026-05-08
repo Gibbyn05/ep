@@ -17,6 +17,7 @@ let transferCtx      = null;
 let sortField        = 'navn';
 let sortDir          = 'asc';
 let groupByKategori  = false;
+let pendingStep      = null;
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 
@@ -432,6 +433,30 @@ async function deleteProduct(id) {
   showToast('Produkt slettet');
 }
 
+// ── Bekreftelsesbar ───────────────────────────────────────────────────────────
+
+const confirmBar  = document.getElementById('confirmBar');
+const confirmMsg  = document.getElementById('confirmMsg');
+const confirmYes  = document.getElementById('confirmYes');
+const confirmNo   = document.getElementById('confirmNo');
+
+function showConfirmBar(msg, onConfirm) {
+  pendingStep = onConfirm;
+  confirmMsg.textContent = msg;
+  confirmBar.classList.remove('hidden');
+}
+
+function hideConfirmBar() {
+  pendingStep = null;
+  confirmBar.classList.add('hidden');
+}
+
+confirmYes.addEventListener('click', () => {
+  if (pendingStep) pendingStep();
+  hideConfirmBar();
+});
+confirmNo.addEventListener('click', hideConfirmBar);
+
 // ── Event-delegering ──────────────────────────────────────────────────────────
 
 function handleProductClick(e) {
@@ -440,10 +465,16 @@ function handleProductClick(e) {
     const p = db.products.find(x => x.id === parseInt(step.dataset.id));
     if (!p) return;
     const field  = step.dataset.field;
-    const newVal = step.classList.contains('qty-inc') ? p[field] + 1 : Math.max(0, p[field] - 1);
-    p[field] = newVal;
-    render();
-    dbUpdate(p.id, { [field]: newVal });
+    const isInc  = step.classList.contains('qty-inc');
+    const newVal = isInc ? p[field] + 1 : Math.max(0, p[field] - 1);
+    if (newVal === p[field]) return;
+    const sted   = field === 'butikk' ? 'butikk' : 'eksternlager';
+    const action = isInc ? `Legg til 1 stk i ${sted}` : `Fjern 1 stk fra ${sted}`;
+    showConfirmBar(`${action}: ${p.navn}?`, () => {
+      p[field] = newVal;
+      render();
+      dbUpdate(p.id, { [field]: newVal });
+    });
     return;
   }
   const btn = e.target.closest('button[data-id]');

@@ -750,6 +750,70 @@ label input:focus, label select:focus {
   box-shadow: 0 0 0 3px rgba(22,163,74,.15);
 }
 
+/* ── Bekreftelsesbar ──────────────────────────────────────────── */
+.confirm-bar {
+  position: fixed;
+  bottom: calc(80px + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 250;
+  width: calc(100% - 32px);
+  max-width: 520px;
+  background: var(--dark);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  animation: confirmUp .18s ease-out;
+}
+@keyframes confirmUp {
+  from { transform: translateX(-50%) translateY(16px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+}
+.confirm-bar.hidden { display: none; }
+.confirm-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  flex-wrap: wrap;
+}
+.confirm-msg {
+  color: var(--white);
+  font-size: .88rem;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+.confirm-btns {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.btn-confirm-no {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255,255,255,.3);
+  background: transparent;
+  color: var(--white);
+  font-weight: 600;
+  font-size: .85rem;
+  cursor: pointer;
+  min-height: 40px;
+}
+.btn-confirm-no:hover { background: rgba(255,255,255,.1); }
+.btn-confirm-yes {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: none;
+  background: var(--green);
+  color: var(--white);
+  font-weight: 700;
+  font-size: .85rem;
+  cursor: pointer;
+  min-height: 40px;
+}
+.btn-confirm-yes:hover { background: var(--green-dark); }
+
 .error-msg { color: var(--red); font-size: .85rem; font-weight: 600; }
 
 /* ── Toast ────────────────────────────────────────────────────── */
